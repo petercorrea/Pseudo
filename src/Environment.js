@@ -18,7 +18,7 @@ export class Environment {
     throw new ReferenceError(`variable ${identifier} is not declared`);
   };
 
-  reassignedVariable = (identifier, value) => {
+  reassignVariable = (identifier, value) => {
     if (this.env.hasOwnProperty(identifier)) {
       this.env[identifier] = value;
       return this.env[identifier];

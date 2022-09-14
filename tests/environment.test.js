@@ -18,7 +18,7 @@ describe("Testing Environment class", () => {
 
   it("Environment Class can correctly reassign a variable", () => {
     E.defineVariable("age", 3);
-    E.reassignedVariable("age", 5);
+    E.reassignVariable("age", 5);
     let actual = E.lookupVariable("age");
     let expected = 5;
     assert.equal(actual, expected);
@@ -29,7 +29,7 @@ describe("Testing Environment class", () => {
   });
 
   it("Environment Class fails when reassigning invalid variable", () => {
-    assert.throws(() => E.reassignedVariable("dog", 5));
+    assert.throws(() => E.reassignVariable("dog", 5));
   });
 
   it("Environment Class has globals", () => {
