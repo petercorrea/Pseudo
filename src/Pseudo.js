@@ -5,9 +5,9 @@ export class Pseudo {
     this.env = new Environment();
   }
 
-  eval(exp) {
+  eval(exp, env) {
     // self evaluating number exp
-    if (typeof exp === "number" && arguments.length === 1) {
+    if (typeof exp === "number") {
       return exp;
     }
 
@@ -21,31 +21,29 @@ export class Pseudo {
       // check recursively for sub-expressions
       if (Array.isArray(exp[1])) {
         // recursive eval
-        exp[1] = this.eval(exp[1]);
+        exp[1] = this.eval(exp[1], env);
       }
 
       if (Array.isArray(exp[2])) {
-        exp[2] = this.eval(exp[2]);
+        exp[2] = this.eval(exp[2], env);
       }
 
-      if (typeof exp[1] === "number" && typeof exp[2] === "number") {
-        return exp[1] + exp[2];
-      }
+      return this.eval(exp[1], env) + this.eval(exp[2], env);
     }
 
     // subtraction
     if (exp[0] === "-") {
       // check recursively for sub-expressions
       if (Array.isArray(exp[1])) {
-        exp[1] = this.eval(exp[1]);
+        exp[1] = this.eval(exp[1], env);
       }
 
       if (Array.isArray(exp[2])) {
-        exp[2] = this.eval(exp[2]);
+        exp[2] = this.eval(exp[2], env);
       }
 
       if (typeof exp[1] === "number" && typeof exp[2] === "number") {
-        return exp[1] - exp[2];
+        return this.eval(exp[1], env) - this.eval(exp[2], env);
       }
     }
 
@@ -53,16 +51,14 @@ export class Pseudo {
     if (exp[0] === "*") {
       // check recursively for sub-expressions
       if (Array.isArray(exp[1])) {
-        exp[1] = this.eval(exp[1]);
+        exp[1] = this.eval(exp[1], env);
       }
 
       if (Array.isArray(exp[2])) {
-        exp[2] = this.eval(exp[2]);
+        exp[2] = this.eval(exp[2], env);
       }
 
-      if (typeof exp[1] === "number" && typeof exp[2] === "number") {
-        return exp[1] * exp[2];
-      }
+      return this.eval(exp[1], env) * this.eval(exp[2], env);
     }
 
     // Division
@@ -73,35 +69,60 @@ export class Pseudo {
 
       // check recursively for sub-expressions
       if (Array.isArray(exp[1])) {
-        exp[1] = this.eval(exp[1]);
+        exp[1] = this.eval(exp[1], env);
       }
 
       if (Array.isArray(exp[2])) {
-        exp[2] = this.eval(exp[2]);
+        exp[2] = this.eval(exp[2], env);
       }
 
       if (typeof exp[1] === "number" && typeof exp[2] === "number") {
-        return exp[1] / exp[2];
+        return this.eval(exp[1]) / this.eval(exp[2]);
       }
+    }
+
+    // block evaluation
+    if (exp[0] === "begin") {
+      const blockEnv = new Environment({}, env);
+      return this._evalBlock(exp, blockEnv);
     }
 
     // variable declaration
     if (exp[0] === "var" && exp[2] === "=") {
       if (this._isValidIdentifierName(exp[1])) {
         // recursive eval
-        return this.env.defineVariable(exp[1], this.eval(exp[3]));
+        return this.env.defineVariable(exp[1], this.eval(exp[3], env));
       }
     }
 
+    // variable reassign
+    if (exp[0] === "set") {
+      const [_, name, value] = exp;
+      return this.env.reassignVariable(name, this.eval(value, env));
+    }
+
     // variable lookup
-    if (_isValidIdentifierName(exp)) {
+    if (this._isValidIdentifierName(exp)) {
       return this.env.lookupVariable(exp);
     }
 
-    throw "could not evaluate expression";
+    throw `could not evaluate expression ${exp}`;
   }
 
+  // helpers
   _isValidIdentifierName = (id) => {
     return typeof id === "string" && /^[a-zA-Z][a-zA-Z0-9_]*$/.test(id);
+  };
+
+  _evalBlock = (block, env) => {
+    let result;
+
+    const [_tag, ...expressions] = block;
+
+    expressions.forEach((exp) => {
+      result = this.eval(exp, env);
+    });
+
+    return result;
   };
 }

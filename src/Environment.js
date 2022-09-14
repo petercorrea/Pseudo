@@ -1,8 +1,19 @@
 export class Environment {
-  env = {
-    null: null,
-    true: true,
-    false: false,
+  constructor(env = { null: null, true: true, false: false }, parent = null) {
+    this.env = env;
+    this.parent = parent;
+  }
+
+  resolve = (identifier) => {
+    if (this.env.hasOwnProperty(identifier)) {
+      return this;
+    }
+
+    if (this.parent === null) {
+      throw new ReferenceError(`variable ${identifier} is not declared`);
+    }
+
+    return this.parent.resolve(identifier);
   };
 
   defineVariable = (identifier, value) => {
@@ -11,19 +22,11 @@ export class Environment {
   };
 
   lookupVariable = (identifier) => {
-    if (this.env.hasOwnProperty(identifier)) {
-      return this.env[identifier];
-    }
-
-    throw new ReferenceError(`variable ${identifier} is not declared`);
+    return this.resolve(identifier).env[identifier];
   };
 
   reassignVariable = (identifier, value) => {
-    if (this.env.hasOwnProperty(identifier)) {
-      this.env[identifier] = value;
-      return this.env[identifier];
-    }
-
-    throw new ReferenceError(`variable ${identifier} is not declared`);
+    this.resolve(identifier).env[identifier] = value;
+    return value;
   };
 }
